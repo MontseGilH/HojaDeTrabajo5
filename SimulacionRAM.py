@@ -99,7 +99,7 @@ for total in [25, 50, 100, 150, 200]:
     
 incisoB_1 = []
 for total in [25, 50, 100, 150, 200]:
-    incisoB_1.append(simular(tot_procesos=total, tiempo_intervalo=5))
+    incisoB_1.append(simular(tot_procesos=total, tiempo_intervalo=1))
         
 incisoC_i = []
 for interv in [10, 5, 1]:
