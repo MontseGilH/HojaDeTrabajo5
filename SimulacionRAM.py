@@ -16,17 +16,21 @@ class SimulacionRAM():
 
           
 class Procesos():
-    def __init__(self, total, procesadores, memoria, velocidad):
+    def __init__(self, total, procesadores, memoria, velocidad, interv):
         self.tiempos = []
-        self.titulo = f'Procesos: {total}, procesadores: {procesadores}, memoria: {memoria}, velocidad: {velocidad}' 
+        self.titulo = f'Procesos: {total}, procesadores: {procesadores}, memoria: {memoria}, velocidad: {velocidad}, intervalos: {interv}' 
+        self.total = total
         
     def add(self, item):
         self.tiempos.append(item)
     
-    def mostrarStat(self):
+    def mostrarStatTitulo(self):
         print('\n' + self.titulo)
         print("Media\tDesviación estándar")
         print(f"{np.mean(self.tiempos)}\t{np.std(self.tiempos)}")
+        
+    def mostrarStat(self):
+        print(f"{self.total}\t{np.mean(self.tiempos):2f}\t{np.std(self.tiempos):2f}")
         
         
                
@@ -35,19 +39,19 @@ def proceso(env, simRAM, num, procesos, rand):
     memoria = rand.randint(1, 10)
     instrucciones = rand.randint(1,10)
     inicio = env.now
-    with simRAM.RAM.get(memoria) as req:
-        yield req
+    with simRAM.RAM.get(memoria) as reqREADY:
+        yield reqREADY
         print(f'Proceso no. {num} se encuentra en READY')
         while instrucciones > 0:
-            with simRAM.procesadores.request() as req:
-                yield req
+            with simRAM.procesadores.request() as reqRUNNING:
+                yield reqRUNNING
                 yield env.timeout(1)
                 print(f'Proceso no. {num} en RUNNING')
                 instrucciones = instrucciones - simRAM.velocidad
                 
                 if rand.randint(1,2) == 2:
-                    with simRAM.waiting.request() as req:
-                        yield req
+                    with simRAM.waiting.request() as reqWAITING:
+                        yield reqWAITING
                         print(f'Procesador no. {num} en WAITING')
                         yield env.timeout(1)
                 
@@ -59,7 +63,7 @@ def proceso(env, simRAM, num, procesos, rand):
               
 def simular(memoria=100, tot_procesos=25, procesadores=1, velocidad=3, tiempo_intervalo=10):            
     env = Environment()
-    procesos = Procesos(tot_procesos, procesadores, memoria, velocidad)
+    procesos = Procesos(tot_procesos, procesadores, memoria, velocidad, tiempo_intervalo)
     simRAM = SimulacionRAM(env, procesadores, memoria, velocidad)
     rand = Random(123)
     cnt = 0
@@ -89,45 +93,70 @@ incisoA = []
 for total in [25, 50, 100, 150, 200]:
     incisoA.append(simular(tot_procesos=total))
 
-incisoB = []
-for interv in [5, 1]:
-    for total in [25, 50, 100, 150, 200]:
-        incisoB.append(simular(tot_procesos=total, tiempo_intervalo=interv))
+incisoB_5 = []
+for total in [25, 50, 100, 150, 200]:
+    incisoB_5.append(simular(tot_procesos=total, tiempo_intervalo=5))
+    
+incisoB_1 = []
+for total in [25, 50, 100, 150, 200]:
+    incisoB_1.append(simular(tot_procesos=total, tiempo_intervalo=5))
         
 incisoC_i = []
-for total in [25, 50, 100, 150, 200]:
-    for interv in [10, 5, 1]:
-        incisoC_i.append(simular(tot_procesos=total, memoria=200, tiempo_intervalo=interv))
+for interv in [10, 5, 1]:
+    temp = []
+    for total in [25, 50, 100, 150, 200]:
+        temp.append(simular(tot_procesos=total, memoria=200, tiempo_intervalo=interv))
+    incisoC_i.append(temp)
     
 incisoC_ii = []
-for total in [25, 50, 100, 150, 200]:
-    for interv in [10, 5, 1]:
-        incisoC_ii.append(simular(tot_procesos=total, velocidad=6, tiempo_intervalo=interv))
+for interv in [10, 5, 1]:
+    temp = []
+    for total in [25, 50, 100, 150, 200]:
+        temp.append(simular(tot_procesos=total, velocidad=6, tiempo_intervalo=interv))
+    incisoC_ii.append(temp)
     
 incisoC_iii = []
-for total in [25, 50, 100, 150, 200]:
-    for interv in [10, 5, 1]:
-        incisoC_iii.append(simular(tot_procesos=total, procesadores=2, tiempo_intervalo=interv))
+for interv in [10, 5, 1]:
+    temp = []
+    for total in [25, 50, 100, 150, 200]:
+        temp.append(simular(tot_procesos=total, procesadores=2, tiempo_intervalo=interv))
+    incisoC_iii.append(temp)
   
-print("Inciso a)")  
+print("\nInciso a)")
+print('Procesos\tMedia\tDesviación estándar')
 for p in incisoA:
     p.mostrarStat()
     
-print('\nInciso b)')
-for p in incisoB:
+print('\nInciso b) intervalo 5')
+print('Procesos\tMedia\tDesviación estándar')
+for p in incisoB_5:
+    p.mostrarStat()
+    
+print('\nInciso b) intervalo 1')
+print('Procesos\tMedia\tDesviación estándar')
+for p in incisoB_1:
     p.mostrarStat()
     
 print('\nInciso c) i)')
-for p in incisoC_i:
-    p.mostrarStat()
-    
+for (array, interv) in zip(incisoC_i, [10, 5, 1]):
+    print(f'\nIntervalo {interv}')
+    print('Procesos\tMedia\tDesviación estándar')
+    for p in array:
+        p.mostrarStat()
+        
 print('\nInciso c) ii)')
-for p in incisoC_ii:
-    p.mostrarStat()
-    
+for (array, interv) in zip(incisoC_ii, [10, 5, 1]):
+    print(f'\nIntervalo {interv}')
+    print('Procesos\tMedia\tDesviación estándar')
+    for p in array:
+        p.mostrarStat()
+        
 print('\nInciso c) iii)')
-for p in incisoC_iii:
-    p.mostrarStat()
+for (array, interv) in zip(incisoC_iii, [10, 5, 1]):
+    print(f'\nIntervalo {interv}')
+    print('Procesos\tMedia\tDesviación estándar')
+    for p in array:
+        p.mostrarStat()
 
 
        
