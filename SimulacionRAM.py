@@ -1,4 +1,12 @@
-from queue import Queue
+'''
+Hoja de Trabajo No. 5
+Grupo 12.
+Gabriela de León
+Montserrat Gil
+Manuel Martínez
+'''
+
+
 from simpy import Resource, Container, Environment
 from random import Random
 import numpy as np
@@ -8,41 +16,61 @@ import numpy as np
 
 class SimulacionRAM():
     def __init__(self, env, procesadores=1, memoria=100, velocidad=3):
+        '''
+        Inicializa la simulación de procesamiento de procesos
+        '''
         self.procesadores = Resource(env, capacity=procesadores)
         self.RAM = Container(env, init=memoria, capacity=memoria)
         self.velocidad = velocidad
         self.env = env
         self.waiting = Resource(env, capacity=1)
 
-          
+# Clase para generar las estadísticas.          
 class Procesos():
     def __init__(self, total, procesadores, memoria, velocidad, interv):
+        '''
+        Inicializa arreglos y texto.
+        '''
         self.tiempos = []
         self.titulo = f'Procesos: {total}, procesadores: {procesadores}, memoria: {memoria}, velocidad: {velocidad}, intervalos: {interv}' 
         self.total = total
         
     def add(self, item):
+        '''
+        Añade elemento al arreglo
+        '''
         self.tiempos.append(item)
     
     def mostrarStatTitulo(self):
+        '''
+        Imprime estadísticas con título
+        '''
         print('\n' + self.titulo)
         print("Media\tDesviación estándar")
         print(f"{np.mean(self.tiempos)}\t{np.std(self.tiempos)}")
         
     def mostrarStat(self):
+        '''
+        Imprime estadísticas
+        '''
         print(f"{self.total}\t{np.mean(self.tiempos):2f}\t{np.std(self.tiempos):2f}")
         
         
                
 def proceso(env, simRAM, num, procesos, rand):
+    '''
+    Es un proceso en la simulación de procesamiento
+    '''
     print(f'Proceso no. {num} en NEW')
     memoria = rand.randint(1, 10)
     instrucciones = rand.randint(1,10)
     inicio = env.now
+    # Cuando hay memoria disponible se encuentra en READY
     with simRAM.RAM.get(memoria) as reqREADY:
         yield reqREADY
         print(f'Proceso no. {num} se encuentra en READY')
         while instrucciones > 0:
+            # Cuando hay procesadores disponibles se encuentra en RUNNING
             with simRAM.procesadores.request() as reqRUNNING:
                 yield reqRUNNING
                 yield env.timeout(1)
@@ -50,18 +78,23 @@ def proceso(env, simRAM, num, procesos, rand):
                 instrucciones = instrucciones - simRAM.velocidad
                 
                 if rand.randint(1,2) == 2:
+                    # Se encuentra en la cola de WAITING
                     with simRAM.waiting.request() as reqWAITING:
                         yield reqWAITING
                         print(f'Procesador no. {num} en WAITING')
                         yield env.timeout(1)
                 
                 print(f"Proceso no. {num} se encuentra en READY")
+        # Regresa la memoria
         simRAM.RAM.put(memoria)      
         print(f"Proceso no. {num} en TERMINATED")  
         procesos.add(env.now - inicio)
             
               
-def simular(memoria=100, tot_procesos=25, procesadores=1, velocidad=3, tiempo_intervalo=10):            
+def simular(memoria=100, tot_procesos=25, procesadores=1, velocidad=3, tiempo_intervalo=10):   
+    '''
+    Realiza una simulación
+    '''         
     env = Environment()
     procesos = Procesos(tot_procesos, procesadores, memoria, velocidad, tiempo_intervalo)
     simRAM = SimulacionRAM(env, procesadores, memoria, velocidad)
@@ -69,6 +102,7 @@ def simular(memoria=100, tot_procesos=25, procesadores=1, velocidad=3, tiempo_in
     cnt = 0
     total = tot_procesos
     for intervalo in range(1, 25000):
+        # Agrega procesos acorde distribución.
         p = int(rand.expovariate(1.0/intervalo))
         for _ in range(p):
             env.process(proceso(env, simRAM, cnt, procesos, rand))
